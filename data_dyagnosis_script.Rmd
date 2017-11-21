@@ -34,21 +34,28 @@ data_response_index <- 2
 
 ```{r data_load, include=FALSE, echo=FALSE}
 colClasses <- append(c(rep("factor",data_class_factors)),c(rep("numeric",data_class_numeric)))
-data_df <- read.csv2(file = "resources/data_dummy.csv", sep = ",", dec = ".", colClasses = colClasses, stringsAsFactors = FALSE)
-#data_df <- read.csv2(file = "resources/data.csv", sep = ",", dec = ".", colClasses = colClasses, stringsAsFactors = FALSE)
+#data_df <- read.csv2(file = "resources/data_dummy.csv", sep = ",", dec = ".", colClasses = colClasses, stringsAsFactors = FALSE)
+data_df <- read.csv2(file = "resources/data.csv", sep = ",", dec = ".", colClasses = colClasses, stringsAsFactors = FALSE)
 data_formula <- as.formula(paste(colnames(data_df[data_response_index]), "~", paste(colnames(data_df)[-(1:data_class_factors)], collapse=" + ")))
 ```
 
-```{r data_df_str_summ, include=FALSE, echo=FALSE}
-data_descr <- describe(data_df)
-data_n_obs <- data_descr[1,]$n
+```{r data_df_inf, include=FALSE, echo=FALSE}
+#data_control <- rfeControl(functions=rfFuncs, method="cv", number=10)
+#data_rfe <- rfe(data_df[,(data_class_factors+1):length(data_df[1,])], data_df[,data_response_index], sizes = c(1:20), metric = "Accuracy", maximize = TRUE, rfeControl = data_control)
+#data_most_inf_feat <- predictors(data_rfe)
+#data_df_inf_num <- subset(data_df,select=)
+```
+
+```{r data_df_descr, include=FALSE, echo=FALSE}
+
+data_n_obs <- length(data_df[,1])
 data_n_resp_levels <- length(levels(data_df[,data_response_index]))
 data_resp_levels <- levels(data_df[,data_response_index])
 data_resp_levels_string <- paste(paste0(data_resp_levels[1:(data_n_resp_levels-1)], collapse=", "), tail(data_resp_levels, n=1), sep=" and ")
-data_control <- rfeControl(functions=rfFuncs, method="cv", number=10)
-data_rfe <- rfe(data_df[,(data_class_factors+1):length(data_df[1,])], data_df[,data_response_index], sizes = c(1:20), metric = "Accuracy", maximize = TRUE, rfeControl = data_control)
-data_most_inf_feat <- predictors(data_rfe)
+
+
 ```
+
 
 ```{r dyagnosis_function, include=FALSE, echo=FALSE}
 factor_mode <- function(x) {
@@ -63,22 +70,24 @@ dyagnose_data <- function(df){
     rownames(data_dyagnosis[i,]) <- colnames(df[i])
     data_dyagnosis$class[i] <- class(df[,i])
     if (class(df[,i]) == "numeric"){
+      data_descr <- describe(data_df[,i])
       data_dyagnosis$class[i] <- class(df[,i])
       data_dyagnosis$n_levels[i] <- "NA"
-      data_dyagnosis$mean[i] <- data_descr[i,]$mean
-      data_dyagnosis$median[i] <- data_descr[i,]$median
-      data_dyagnosis$sd[i] <- data_descr[i,]$sd
-      data_dyagnosis$min[i] <- data_descr[i,]$min
-      data_dyagnosis$max[i] <- data_descr[i,]$max
-      data_dyagnosis$range[i] <- data_descr[i,]$range
-      data_dyagnosis$skew[i] <- data_descr[i,]$skew
-      data_dyagnosis$kurtosis[i] <- data_descr[i,]$kurtosis
-      data_dyagnosis$se[i] <- data_descr[i,]$se
-      normality <- shapiro.test(df[,i])
-      homocedasticity <- shapiro.test(df[,i])
+      data_dyagnosis$mean[i] <- data_descr$mean
+      data_dyagnosis$median[i] <- data_descr$median
+      data_dyagnosis$sd[i] <- data_descr$sd
+      data_dyagnosis$min[i] <- data_descr$min
+      data_dyagnosis$max[i] <- data_descr$max
+      data_dyagnosis$range[i] <- data_descr$range
+      data_dyagnosis$skew[i] <- data_descr$skew
+      data_dyagnosis$kurtosis[i] <- data_descr$kurtosis
+      data_dyagnosis$se[i] <- data_descr$se
+#      normality <- shapiro.test(df[,i])
+      normality <- ks.test(df[,i],y='pnorm', mean=1, sd=2)
       data_dyagnosis$normality[i] <- ifelse(normality$p.value >= 0.05,1,0)
+
       data_dyagnosis$var_zero[i] <- ifelse(var(data_df[,i]) == 0,1,0)
-      data_dyagnosis$description[i] <- paste("The ", rownames(data_dyagnosis[i,]), " variable is a numeric variable with the following descriptive statistics: mean = ", data_dyagnosis$mean[i], ", median = ", data_dyagnosis$median[i], ", standard deviation = ", data_dyagnosis$sd[i], ", min value = ", data_dyagnosis$min[i], ", max value = ", data_dyagnosis$max[i], ", which accounts for range = ", data_dyagnosis$range[i], ". It has a skew of ", data_dyagnosis$skew[i], ", a kurtosis of ", data_dyagnosis$kurtosis[i], ", and a standard error of ", data_dyagnosis$se[i], ".", sep = "")
+      data_dyagnosis$description[i] <- paste("The **", rownames(data_dyagnosis[i,]), "** variable is a numeric variable with the following descriptive statistics: \n**mean** = ", data_dyagnosis$mean[i], ", \n**median** = ", data_dyagnosis$median[i], ", \n**standard deviation** = ", data_dyagnosis$sd[i], ", \n**min value** = ", data_dyagnosis$min[i], ", \n**max value** = ", data_dyagnosis$max[i], ", \nwhich accounts for **range** = ", data_dyagnosis$range[i], ". \nIt has a **skewness** of ", data_dyagnosis$skew[i], ", a **kurtosis** of ", data_dyagnosis$kurtosis[i], ", and a **standard error** of ", data_dyagnosis$se[i], ".\n\n", sep = "")
     } else if (class(df[,i]) == "factor"){
       data_dyagnosis$class[i] <- class(df[,i])
       data_dyagnosis_levels <- levels(df[,i])
@@ -96,9 +105,9 @@ dyagnose_data <- function(df){
       data_dyagnosis$var_zero[i] <- "NA"
       if (data_dyagnosis$n_levels[i] > 1){
         if (data_dyagnosis$n_levels[i] < 5) {
-          data_dyagnosis$description[i] <- paste("The **", rownames(data_dyagnosis[i,]), "** variable is a factor variable with ", data_dyagnosis$n_levels[i], " levels, being these ", paste(paste0(data_dyagnosis_levels[1:(data_dyagnosis$n_levels[i]-1)], collapse=", "), tail(data_dyagnosis_levels, n=1), sep=" and "), ". The mode is ", factor_mode(df[,i]), " with ", table(df[,i])[names(table(df[,i])) == factor_mode(df[,i])]," occurrences.", sep = "")
+          data_dyagnosis$description[i] <- paste("The **", rownames(data_dyagnosis[i,]), "** variable is a factor variable with ", data_dyagnosis$n_levels[i], " levels, being these ", paste(paste0(data_dyagnosis_levels[1:(data_dyagnosis$n_levels[i]-1)], collapse=", "), tail(data_dyagnosis_levels, n=1), sep=" and "), ". The mode is ", factor_mode(df[,i]), " with ", table(df[,i])[names(table(df[,i])) == factor_mode(df[,i])]," occurrences.\n\n", sep = "")
         } else {
-          data_dyagnosis$description[i] <- paste("The ", rownames(data_dyagnosis[i,]), " variable is a factor variable with ", data_dyagnosis$n_levels[i], " levels, being these ", paste(data_dyagnosis_levels[1:4], sep=", "), " and others (multiple or ordered levels, non-practical to enumerate). The mode is ", factor_mode(df[,i]), " with ", table(df[,i])[names(table(df[,i])) == factor_mode(df[,i])]," occurrences.", sep = "")
+          data_dyagnosis$description[i] <- paste("The **", rownames(data_dyagnosis[i,]), "** variable is a factor variable with ", data_dyagnosis$n_levels[i], " levels, being these ", paste(data_dyagnosis_levels[1:4], sep=", "), " and others (multiple or ordered levels, non-practical to enumerate). The mode is ", factor_mode(df[,i]), " with ", table(df[,i])[names(table(df[,i])) == factor_mode(df[,i])]," occurrences.\n\n", sep = "")
         }
       } else {
         data_dyagnosis$description[i] <- paste("The **", rownames(data_dyagnosis[i,]), "** variable is a factor variable with 1 level, being this ", data_dyagnosis_levels[1], ". As it's the only level for this factor, it is also the mode.", sep = "")
@@ -123,16 +132,9 @@ identify_cp <- function(dyag_df) {
 ```
 ```{r dyagnosis_df, include=FALSE, echo=FALSE}
 data_dyag_df <- dyagnose_data(data_df)
-data_dyag_cp <- subset(data_dyag_df, data_dyag_df$normality == 0 | data_dyag_df$has_na == 1 | data_dyag_df$var_zero == 1)
-data_dyag_non_normal <- data_dyag_df[which(data_dyag_df$normality == 0),]
+data_dyag_cp <- subset(data_dyag_df, data_dyag_df$has_na == 1 | data_dyag_df$var_zero == 1)
 data_dyag_var_zero <- data_dyag_df[which(data_dyag_df$var_zero == 1),]
 data_dyag_has_na <- data_dyag_df[which(data_dyag_df$has_na == 1),]
-
-data_dyag_cp_non_normal_vars <- if (length(data_dyag_non_normal) > 1) {
-  paste(paste0(head(rownames(data_dyag_non_normal),-1), collapse=", "), tail(rownames(data_dyag_non_normal),1), sep=" and ")
-} else {
-  rownames(data_dyag_non_normal[,1])
-}
 
 data_dyag_cp_has_na_vars <- if (length(data_dyag_has_na) > 1) {
   paste(paste0(head(rownames(data_dyag_has_na),-1), collapse=", "), tail(rownames(data_dyag_has_na),1), sep=" and ")
@@ -150,59 +152,40 @@ data_dyag_cp_var_zero_vars <- if (length(data_dyag_var_zero) > 1) {
 
 #Introduction  
 
-This document aims to present a complete descriptive statistics briefing on the specific data set it is based on. It's **not** to be a *must-read-wholly* file, as it is data-intensive and not all statistics may be needed for most variables. Even so, for the sake of complete information and critic sense, it is presented for the reader's discretion. The statistics presented in this document may be updated at any time it is deemed necessary and used to complement the critic appraisal of results in the wider context of this project.  
+This document aims to present a complete descriptive statistics briefing on the specific data set it is based on. It's **not** to be a *must-read-wholly* file, as it is data-intensive and not all statistics may be needed for most variables. Even so, for the sake of complete information and critic sense, it **must** be available at the reader's discretion, in order for it to be a tool to use in judgement of anomalous results. The statistics presented in this document may be updated, extended or improved at any time it is deemed necessary and used to complement the critic appraisal of results in the wider context of this project.  
 
 #1 - Data set general data
 
 The current data set is a study on **normal**, **atypical**, and reactive lymphocytes, in which 2867 numerical variables, based on colorimetric and geometric features have been measured. The aim of the study is more thoroughly explained both in the proposal and main report for this project.  
 
-The current data set has `r data_n_obs` observations for `r length(data_descr[,1])` variables, of which `r data_class_factors` are factors and `r data_class_numeric` are numeric.  
-
-  
+The current data set has `r data_n_obs` observations for `r length(data_df[1,])` variables, of which `r data_class_factors` are factors and `r data_class_numeric` are numeric.  
 
 #2 - Critic point variables  
 
-Of all variables included in the data set, `r length(data_dyag_cp[,1])` are potential critical point variables, and should be reviewed as such. `r length(data_dyag_df$var_zero[which(data_dyag_df$var_zero == 1)])` have variance zero and should be considered as constants and be treated as such. `r length(data_dyag_df$normality[which(data_dyag_df$normality == 0)])` of `r data_class_numeric` have a non-normal distribution. `r length(data_dyag_df$has_na[which(data_dyag_df$has_na == 1)])` of `r data_class_numeric` have missing values and need a further review.
+Of all variables included in the data set, `r length(data_dyag_cp[,1])` are potential critical point variables, and should be reviewed as such. `r length(data_dyag_df$var_zero[which(data_dyag_df$var_zero == 1)])` have variance zero and should be considered as constants and be treated as such. `r length(data_dyag_df$has_na[which(data_dyag_df$has_na == 1)])` of `r data_class_numeric` have missing values and need a further review.  
+
+Even though non-normality could be considered a critic point for a variable, the actual data set is composed of `r data_n_obs` observations. A data set this large creates an artifact in which Kolmogorov-Smirnoff or Shapiro-Wilk tests tend to reject the null hypothesis of normality at a false rate, so it won't be assessed in this report.
 
 ```{r data_desc_critic_point, results='asis', include=TRUE, echo=FALSE}
-if (length(data_dyag_non_normal[,1]) > 0) {
-  cat(paste("**Non-normal:** *", data_dyag_cp_non_normal_vars, sep = ""))
-  cat("\n\n")
-}
 if (length(data_dyag_var_zero[,1]) > 0) {
   cat(paste("**Variance zero:** *", data_dyag_cp_var_zero_vars, sep = ""))
+  cat("\n\n")
+} else {
+  cat("**Variance zero:** no variables present variance zero.")
   cat("\n\n")
 }
 if (length(data_dyag_has_na[,1]) > 0) {
   cat(paste("**Has NA:** *", data_dyag_cp_has_na_vars, "*\n\n", sep = ""))
   cat("\n\n")
+} else {
+  cat("**Has NA:** no variables present NA values.")
+  cat("\n\n")
 }
 ```
 
-#3 - Most influential variable descriptive statistics
+#3 - Total variable descriptive statistics  
 
-By fitting a simple, raw **Random Forest** algorithm, a small set of potentially most accurate variables for classification is subset. Descriptive statistics are listed for these features. It is important to note that these are just **potentially** most accurate variables, **entirely subject** to later dimension reduction techniques on a more informed context.  
-
-```{r data_most_inf_feat, results='asis', include=TRUE, echo=FALSE}
-data_most_inf_feat_string <- paste(paste0(data_most_inf_feat[1:(length(data_most_inf_feat)-1)], collapse=", "), tail(data_most_inf_feat, n=1), sep=" and ")
-data_dyag_most_inf <- data_dyag_df[which(rownames(data_dyag_df) %in% data_most_inf_feat),]
-```
-
-According to this simple, raw **RF**, the most influential variables are `r data_most_inf_feat_string`, and their main descriptive statistics are as follows:  
-
-```{r data_most_inf_feat_desc, results='asis', include=TRUE, echo=FALSE}
-for (i in (1:length(data_dyag_df[,1]))) {
-  if (i != data_response_index) {
-    cat(data_dyag_df[i,"description"])
-    cat("\n\n")
-  }
-}
-```
-
-#4 - Total variable descriptive statistics  
-
-In this section, descriptive statistics are presented for **ALL** variables. Depending on the number of variables, this can be a long, intensive section in which specific data should be searched for.  
-
+In this section, descriptive statistics are presented for **ALL** variables. Depending on the number of variables, this can be a long, intensive section in which specific data should be searched for. 
 The **response variable** *`r colnames(data_df[data_response_index])`* has `r data_n_resp_levels` levels, being these `r data_resp_levels_string`.
 
 ```{r data_desc_stats_cat, results='asis', include=TRUE, echo=FALSE}

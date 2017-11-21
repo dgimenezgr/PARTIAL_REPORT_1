@@ -18,7 +18,7 @@ options:
 knitr::opts_chunk$set(echo = TRUE, fig.lp = "Fig. ", tidy.opts=list(width.cutoff=60),tidy=TRUE, cache = TRUE, fig.width=12, fig.height=4, comment = NULL, out.height='200px', dpi=200, fig.pos = 'h', out.extra = '')
 ```
 
-```{r library_load, echo=FALSE, message=FALSE}
+```{r library_load, echo=FALSE, message=FALSE, warning=FALSE}
 require(knitr)
 require(ggplot2)
 require(reshape2)
@@ -165,9 +165,10 @@ The planned tasks were completed in accordance with the originally scheduled dat
 
 #4 - List of partial results (with attached products)  
 
-**Data analysis script:** Script for the automated analysis of the data input
+**Data analysis script:** Script for the automated analysis of the data input. It presents the reader or reviewer of this project with a *go-to* descriptive statistics briefing of all variables, in which central and dispersion measures can be checked if problems arise and it is suspected that one variable may be anomalous.  
 
-**Data quality report:** The output of the data analysis script, it is a dynamic report on the main descriptive traits of the variables involved in the study. 
+
+**Data quality report:** The output of the data analysis script, it is a dynamic report on the main descriptive traits of the variables involved in the study. As it is stated in the file itself, **it is an information-heavy document**. It is not to be used as reading material of itself, but as a useful source of information about the dataset in case it is needed and a caution measure in any biostatistics project.
 
 #5 - Project Tutor's comments  
 
